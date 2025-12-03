@@ -1,0 +1,15 @@
+spring:
+  application:
+    name: mp-db
+  main:
+    banner-mode: console
+
+logging:
+  level:
+    root: ERROR
+    com.mpdb: INFO
+    com.mpdb.repl: DEBUG
+
+# REPL configuration
+app:
+  prompt: "mp-db> "

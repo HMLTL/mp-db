@@ -1,4 +1,4 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
 public class TestCalcite {
     public static void main(String[] args) {

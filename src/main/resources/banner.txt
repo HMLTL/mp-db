@@ -1,0 +1,4 @@
+═══════════════════════════════════════════
+  Welcome to MP(Mykola Pikuza) DB CLI REPL
+═══════════════════════════════════════════
+Powered by Spring Boot and Apache Calcite

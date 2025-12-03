@@ -1,4 +1,4 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;

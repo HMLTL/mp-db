@@ -1,4 +1,4 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
 import org.springframework.stereotype.Component;
 
@@ -24,15 +24,15 @@ public class ColonCommandProcessor implements Processor {
      */
     private String handleColonCommand(String input) {
         String[] parts = input.substring(1).split("\\s+", 2);
-        String command = parts[0].toLowerCase();
+        String commandToken = parts[0].toLowerCase();
         String arg = parts.length > 1 ? parts[1].toLowerCase() : null;
 
-        return switch (command) {
-            case "debug-ast" -> handleDebugAst(arg);
-            case "quit", "exit", "q" -> handleQuit();
-            case "help", "h", "?" -> getHelp();
-            case "status" -> handleStatus();
-            default -> "Unknown command: :" + command + "\nType ':help' or 'help' for available commands.";
+        return switch (ColonCommand.from(commandToken)) {
+            case DEBUG_AST -> handleDebugAst(arg);
+            case QUIT, EXIT, Q -> handleQuit();
+            case HELP, H, QUESTION -> getHelp();
+            case STATUS -> handleStatus();
+            case WRONG -> "Unknown command: :" + commandToken + "\nType ':help' or 'help' for available commands.";
         };
     }
 
@@ -83,4 +83,3 @@ public class ColonCommandProcessor implements Processor {
     }
 
 }
-

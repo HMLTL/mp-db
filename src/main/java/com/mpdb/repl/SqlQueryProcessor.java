@@ -1,4 +1,4 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -34,29 +34,19 @@ public class SqlQueryProcessor implements Processor {
             return "❌ SQL Parse Error:\n" + result.errorMessage();
         }
 
-        // Build response based on debug modes
-        StringBuilder response = new StringBuilder();
-
         if (dbState.isDebugAstMode()) {
             String queryType = result.getSqlKind();
             String formattedAst = formatAst(result.getAstString());
-
-            log.debug("Query Type: {}", queryType);
-            log.debug("AST:\n{}", formattedAst);
-
-            response.append("Query Type: ").append(queryType).append("\n");
-            response.append("\nAST:\n").append(formattedAst).append("\n");
-            response.append("\n⚠️  Note: Query execution is not yet implemented.");
+            System.out.printf("\nQuery Type: %s\nAST:\n%s\n", queryType, formattedAst);
         }
 
-        return response.toString();
+        return "\n⚠️  Note: Query execution is not yet implemented.";
     }
 
     /**
      * Format AST string for better readability.
      */
     private String formatAst(String ast) {
-        // Add indentation for better readability
         return ast.replace(", ", ",\n  ")
                   .replace("(", "(\n  ")
                   .replace(")", "\n)");

@@ -1,4 +1,4 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.junit.jupiter.api.BeforeEach;

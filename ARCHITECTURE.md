@@ -22,16 +22,16 @@ CommandProcessor (main coordinator)
   └── delegates to SqlQueryProcessor for all other inputs
 
 ColonCommandProcessor
-  ├── depends on: DebugState
+  ├── depends on: shared debug state component
   ├── handles :quit, :exit, :q
   ├── handles :help, :h, :?
   ├── handles :status
   └── handles :debug-ast [on|off]
 
 SqlQueryProcessor
-  ├── depends on: CalciteQueryParser, DebugState
+  ├── depends on: CalciteQueryParser, shared debug state component
   ├── parses SQL queries using Calcite
-  ├── accesses DebugState for debug mode settings
+  ├── accesses debug state for debug mode settings
   ├── formats AST output
   ├── logs query details at DEBUG level
   └── handles SQL validation errors
@@ -42,7 +42,7 @@ CalciteQueryParser
   ├── validates SQL syntax
   └── returns ParseResult with validation status
 
-DebugState
+Debug state component
   ├── centralized state management
   └── manages debugAstMode flag (default: true)
 ```
@@ -53,15 +53,15 @@ DebugState
 ReplRunner
   └── CommandProcessor
         ├── ColonCommandProcessor
-        │     └── DebugState
+        │     └── Debug state component
         └── SqlQueryProcessor
               ├── CalciteQueryParser
-              └── DebugState
+              └── Debug state component
 ```
 
 **Key Points:**
 - `CommandProcessor` coordinates routing between processors
-- Both `ColonCommandProcessor` and `SqlQueryProcessor` depend on `DebugState`
+- Both `ColonCommandProcessor` and `SqlQueryProcessor` depend on shared debug state
 - No circular dependencies - clean separation of concerns
 - `SqlQueryProcessor` no longer depends on `ColonCommandProcessor`
 
@@ -80,11 +80,11 @@ User Input → ReplRunner
          ↓         ↓
   ColonCommandProcessor   SqlQueryProcessor
          ↓                      ↓
-    DebugState            CalciteQueryParser
+    Debug state            CalciteQueryParser
          ↓                      ↓
     Update/Query          Parse SQL → AST
          ↓                      ↓
-    Return result         Check DebugState
+    Return result         Check debug state
                                ↓
                           Format output
                                ↓
@@ -97,7 +97,7 @@ User Input → ReplRunner
 The `Processor` interface has only one method: `process(String input)`. We removed the `canProcess()` method to keep the interface simple. Routing logic is handled by `CommandProcessor` using straightforward if statements.
 
 ### 2. Centralized State Management
-`DebugState` is a separate Spring component that manages application state:
+A shared component manages application state:
 - Eliminates coupling between processors
 - Single source of truth for debug modes
 - Easy to extend with additional state flags
@@ -115,26 +115,30 @@ Each component has a single, well-defined responsibility:
 - **ColonCommandProcessor**: Handles meta commands and updates state
 - **SqlQueryProcessor**: Parses SQL queries and formats output
 - **CalciteQueryParser**: Wraps Apache Calcite for SQL parsing
-- **DebugState**: Manages application state
+- **Shared Debug State**: Manages application state
 - **ReplRunner**: Manages REPL loop and user interaction
 
 ### 5. Logging Strategy
 `SqlQueryProcessor` logs query details at DEBUG level when debug mode is enabled:
-- Uses SLF4J with Lombok's `@Slf4j` annotation
+- Uses SLF4J
 - Logs query type and AST for diagnostic purposes
 - Separate from console output for flexible debugging
 
 ## Files Structure
 
 ```
-src/main/java/com/example/mydb/repl/
+src/main/java/com/mpdb/repl/
 ├── Processor.java                  (interface - common contract)
 ├── CommandProcessor.java           (main coordinator)
 ├── ColonCommandProcessor.java      (handles :commands)
 ├── SqlQueryProcessor.java          (handles SQL queries)
 ├── CalciteQueryParser.java         (Calcite integration)
-├── DebugState.java                 (state management)
 └── ReplRunner.java                 (REPL loop)
+```
+
+Resources:
+```
+src/main/resources/application.yml
 ```
 
 ## Benefits
@@ -144,7 +148,7 @@ src/main/java/com/example/mydb/repl/
 ✅ **Testability**: Each processor can be tested independently with mocked dependencies  
 ✅ **Maintainability**: Logic is separated and easy to locate  
 ✅ **Simplicity**: Simple if statements for routing, no complex loops  
-✅ **Loose Coupling**: Shared state through `DebugState`, not direct processor dependencies  
+✅ **Loose Coupling**: Shared state through a dedicated component, not direct processor dependencies  
 ✅ **Extensibility**: Easy to add new debug modes or state flags
 
 ## Extension Points
@@ -155,18 +159,15 @@ src/main/java/com/example/mydb/repl/
 3. **New Processor Type**: Implement `Processor` interface and add routing in `CommandProcessor`
 
 ### Adding New State
-1. Add field to `DebugState` (e.g., `debugParseMode`, `verboseMode`)
-2. Add getter/setter (or use Lombok's `@Getter`/`@Setter`)
+1. Add field to the shared state component (e.g., `debugParseMode`, `verboseMode`)
+2. Add getter/setter
 3. Add colon command in `ColonCommandProcessor` to toggle it
 4. Use state in relevant processor
 
 ### Example: Adding a New Debug Mode
 
-**Step 1**: Add to `DebugState.java`
+**Step 1**: Add to the state component
 ```java
-@Getter
-@Setter
-@Component
 public class DebugState {
     private boolean debugAstMode = true;
     private boolean debugParseMode = false;  // New mode
@@ -182,7 +183,6 @@ case "debug-parse" -> handleDebugParse(arg);
 ```java
 if (debugState.isDebugParseMode()) {
     log.debug("Parse details: ...");
-    response.append("Parse details: ...");
 }
 ```
 
@@ -190,15 +190,21 @@ if (debugState.isDebugParseMode()) {
 
 ### Unit Testing
 - **CommandProcessor**: Test routing logic with mocked processors
-- **ColonCommandProcessor**: Test each command with mocked `DebugState`
-- **SqlQueryProcessor**: Test SQL parsing with mocked `CalciteQueryParser` and `DebugState`
+- **ColonCommandProcessor**: Test each command with mocked state
+- **SqlQueryProcessor**: Test SQL parsing with mocked `CalciteQueryParser` and state
 - **CalciteQueryParser**: Test SQL parsing with various valid/invalid queries
-- **DebugState**: Test state getters/setters
 
 ### Integration Testing
 - Test complete flow from user input to output
 - Test state changes across multiple commands
 - Test SQL parsing with different query types
+
+## Build and Run (Gradle)
+
+- Build: `./gradlew clean build`
+- Run: `./gradlew bootRun`
+- Tests: `./gradlew test`
+- Test report: `build/reports/tests/test/index.html`
 
 ## Future Enhancements
 
@@ -216,4 +222,3 @@ if (debugState.isDebugParseMode()) {
 ## Build Status
 
 ✅ **BUILD SUCCESS** - All files compiled successfully
-

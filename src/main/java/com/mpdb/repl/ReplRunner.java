@@ -1,5 +1,6 @@
-package com.example.mydb.repl;
+package com.mpdb.repl;
 
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
@@ -10,6 +11,9 @@ public class ReplRunner implements CommandLineRunner {
 
     private final CommandProcessor commandProcessor;
 
+    @Value("${app.prompt:mp-db> }")
+    private String prompt;
+
     public ReplRunner(CommandProcessor commandProcessor) {
         this.commandProcessor = commandProcessor;
     }
@@ -18,14 +22,10 @@ public class ReplRunner implements CommandLineRunner {
     public void run(String... args) {
         Scanner scanner = new Scanner(System.in);
 
-        System.out.println("═══════════════════════════════════════");
-        System.out.println("  Welcome to MP(Mykola Pikuza) DB CLI REPL");
-        System.out.println("═══════════════════════════════════════");
-        System.out.println("Type ':help' or ':h' for available commands");
-        System.out.println("Type ':quit', ':exit' or ':q' to quit\n");
+        printBanner();
 
         while (true) {
-            System.out.print("mp-db> ");
+            System.out.print(prompt);
 
             if (!scanner.hasNextLine()) {
                 break;
@@ -56,5 +56,13 @@ public class ReplRunner implements CommandLineRunner {
 
         scanner.close();
     }
-}
 
+    private void printBanner() {
+        String banner = """
+                ═══════════════════════════════════════════
+                Type ':help' or ':h' for available commands
+                Type ':quit', ':exit' or ':q' to quit
+                """;
+        System.out.println(banner);
+    }
+}

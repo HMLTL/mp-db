@@ -34,46 +34,42 @@ A SQL-powered CLI REPL (Read-Eval-Print Loop) application built with Spring Boot
 ## Requirements
 
 - Java 17 or higher
-- Maven 3.6+ (wrapper included)
+- Gradle Wrapper (included: `./gradlew`)
 
 ## Building
 
 ```bash
-./mvnw clean package
+./gradlew clean build
 ```
 
 ## Running
 
 ```bash
-./mvnw spring-boot:run
+./gradlew bootRun
 ```
 
 Or run the JAR directly:
 
 ```bash
-java -jar target/my-db-1.0.0-SNAPSHOT.jar
+java -jar build/libs/mp-db-1.0.0-SNAPSHOT.jar
 ```
 
 ## Testing
 
-The project includes a comprehensive test suite with 59 unit tests covering all major components.
+The project includes a comprehensive test suite with unit tests covering all major components.
 
 ### Run all tests:
 ```bash
-./mvnw test
+./gradlew test
 ```
 
 ### Run specific test class:
 ```bash
-./mvnw test -Dtest=CommandProcessorTest
+./gradlew test --tests com.mpdb.repl.CommandProcessorTest
 ```
 
-### Test Coverage:
-- **DbStateTest** (4 tests) - State management
-- **CalciteQueryParserTest** (14 tests) - SQL parsing
-- **ColonCommandProcessorTest** (16 tests) - Colon commands
-- **SqlQueryProcessorTest** (10 tests) - SQL processing
-- **CommandProcessorTest** (15 tests) - Command routing
+### Test Reports:
+- Gradle test reports: `build/reports/tests/test/index.html`
 
 For detailed test documentation, see [TEST_SUMMARY.md](TEST_SUMMARY.md).
 
@@ -130,19 +126,19 @@ mp-db/
 ├── src/
 │   └── main/
 │       ├── java/
-│       │   └── com/example/mydb/
-│       │       ├── MyDbApplication.java
+│       │   └── com/mpdb/
+│       │       ├── MpDbApplication.java
 │       │       └── repl/
 │       │           ├── Processor.java              # Common interface
 │       │           ├── CommandProcessor.java        # Main coordinator
 │       │           ├── ColonCommandProcessor.java   # Handles :commands
 │       │           ├── SqlQueryProcessor.java       # Handles SQL parsing
 │       │           ├── CalciteQueryParser.java      # Apache Calcite integration
-│       │           ├── DebugState.java             # State management
 │       │           └── ReplRunner.java             # REPL loop
 │       └── resources/
-│           └── application.properties
-├── pom.xml
+│           └── application.yml
+├── build.gradle
+├── settings.gradle
 ├── README.md
 ├── ARCHITECTURE.md         # Architecture documentation
 └── COLON_COMMANDS.md      # Colon commands guide
@@ -151,11 +147,11 @@ mp-db/
 ## Technology Stack
 
 - **Java 17** - Modern Java LTS version
-- **Spring Boot 3.4.0** - Application framework and dependency injection
+- **Spring Boot 3.x** - Application framework and dependency injection
 - **Apache Calcite 1.37.0** - SQL parsing, validation, and AST generation
 - **SLF4J with Logback** - Logging framework
 - **Lombok** - Code generation for getters/setters
-- **Maven** - Build and dependency management
+- **Gradle** - Build and dependency management
 
 ## Architecture
 
@@ -187,7 +183,7 @@ You can easily extend the application by:
 1. **Adding new colon commands** - Extend `ColonCommandProcessor`
 2. **Adding new SQL features** - Extend `SqlQueryProcessor` or `CalciteQueryParser`
 3. **Adding new processors** - Implement the `Processor` interface and add to `CommandProcessor`
-4. **Adding new debug modes** - Add fields to `DebugState`
+4. **Adding new debug modes** - Add fields to a shared state component
 5. **Implementing SQL execution** - Add execution logic to `SqlQueryProcessor`
 6. **Adding persistent storage** - Inject database access components
 
@@ -200,4 +196,3 @@ You can easily extend the application by:
 ## License
 
 MIT
-
