@@ -33,20 +33,11 @@ public class SqlQueryProcessor implements Processor {
         if (!result.isValid()) {
             return "❌ SQL Parse Error:\n" + result.errorMessage();
         }
-
-        // Build response based on debug modes
-        StringBuilder response = new StringBuilder();
-
         if (dbState.isDebugAstMode()) {
             String queryType = result.getSqlKind();
             String formattedAst = formatAst(result.getAstString());
-
             log.debug("\nQuery Type: {}\nAST:\n{}", queryType, formattedAst);
-//            response.append("Query Type11111 ").append(queryType).append("\n");
-//            response.append("\nAST:\n").append(formattedAst).append("\n");
-//            response.append("\n⚠️  Note: Query execution is not yet implemented.");
         }
-
         return "\n⚠️  Note: Query execution is not yet implemented.";
     }
 
@@ -54,7 +45,6 @@ public class SqlQueryProcessor implements Processor {
      * Format AST string for better readability.
      */
     private String formatAst(String ast) {
-        // Add indentation for better readability
         return ast.replace(", ", ",\n  ")
                   .replace("(", "(\n  ")
                   .replace(")", "\n)");
