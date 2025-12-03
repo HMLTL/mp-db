@@ -34,14 +34,22 @@ public class SqlQueryProcessor implements Processor {
             return "❌ SQL Parse Error:\n" + result.errorMessage();
         }
 
+        // Build response based on debug modes
+        StringBuilder response = new StringBuilder();
+
         if (dbState.isDebugAstMode()) {
             String queryType = result.getSqlKind();
             String formattedAst = formatAst(result.getAstString());
 
-            log.info("\nQuery Type: {}\nAST:\n{}", queryType, formattedAst);
+            log.debug("Query Type: {}", queryType);
+            log.debug("AST:\n{}", formattedAst);
+
+            response.append("Query Type: ").append(queryType).append("\n");
+            response.append("\nAST:\n").append(formattedAst).append("\n");
+            response.append("\n⚠️  Note: Query execution is not yet implemented.");
         }
 
-        return "\n⚠️  Note: Query execution is not yet implemented.";
+        return response.toString();
     }
 
     /**

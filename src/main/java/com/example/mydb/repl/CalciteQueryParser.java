@@ -3,11 +3,13 @@ package com.example.mydb.repl;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.ddl.SqlDdlParserImpl;
 import org.springframework.stereotype.Component;
 
 /**
  * SQL query parser using Apache Calcite.
  * Provides SQL parsing, AST generation, and basic validation.
+ * Supports both DML (SELECT, INSERT, UPDATE, DELETE) and DDL (CREATE, DROP, ALTER) statements.
  */
 @Component
 public class CalciteQueryParser {
@@ -15,9 +17,10 @@ public class CalciteQueryParser {
     private final SqlParser.Config parserConfig;
 
     public CalciteQueryParser() {
-        // Configure SQL parser with default settings
+        // Configure SQL parser to support DDL statements using SqlDdlParserImpl
         this.parserConfig = SqlParser.config()
-                .withCaseSensitive(false);
+                .withCaseSensitive(false)
+                .withParserFactory(SqlDdlParserImpl.FACTORY);
     }
 
     /**
