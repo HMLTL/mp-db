@@ -15,17 +15,17 @@ public class ReplRunner implements CommandLineRunner {
     }
 
     @Override
-    public void run(String... args) throws Exception {
+    public void run(String... args) {
         Scanner scanner = new Scanner(System.in);
 
         System.out.println("═══════════════════════════════════════");
-        System.out.println("  Welcome to My DB CLI REPL");
+        System.out.println("  Welcome to MP(Mykola Pikuza) DB CLI REPL");
         System.out.println("═══════════════════════════════════════");
-        System.out.println("Type 'help' for available commands");
-        System.out.println("Type 'exit' or 'quit' to quit\n");
+        System.out.println("Type ':help' or ':h' for available commands");
+        System.out.println("Type ':quit', ':exit' or ':q' to quit\n");
 
         while (true) {
-            System.out.print("my-db> ");
+            System.out.print("mp-db> ");
 
             if (!scanner.hasNextLine()) {
                 break;
@@ -37,12 +37,15 @@ public class ReplRunner implements CommandLineRunner {
                 continue;
             }
 
-            if ("exit".equalsIgnoreCase(input) || "quit".equalsIgnoreCase(input)) {
-                break;
-            }
-
             try {
                 String result = commandProcessor.process(input);
+
+                // Handle EXIT command from colon commands
+                if ("EXIT".equals(result)) {
+                    System.out.println("Goodbye!");
+                    break;
+                }
+
                 if (result != null && !result.isEmpty()) {
                     System.out.println(result);
                 }
