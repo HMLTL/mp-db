@@ -29,27 +29,17 @@ public class SqlQueryProcessor implements Processor {
      */
     private String handleSqlQuery(String sql) {
         CalciteQueryParser.ParseResult result = queryParser.parseAndValidate(sql);
-
         if (!result.isValid()) {
             return "❌ SQL Parse Error:\n" + result.errorMessage();
         }
 
         if (dbState.isDebugAstMode()) {
             String queryType = result.getSqlKind();
-            String formattedAst = formatAst(result.getAstString());
-            System.out.printf("\nQuery Type: %s\nAST:\n%s\n", queryType, formattedAst);
+            String astString = result.getAstString();
+            System.out.printf("\nQuery Type: %s\nAST:\n%s\n", queryType, astString);
         }
-
         return "\n⚠️  Note: Query execution is not yet implemented.";
     }
 
-    /**
-     * Format AST string for better readability.
-     */
-    private String formatAst(String ast) {
-        return ast.replace(", ", ",\n  ")
-                  .replace("(", "(\n  ")
-                  .replace(")", "\n)");
-    }
 }
 
