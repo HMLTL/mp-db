@@ -1,0 +1,226 @@
+# MP-DB Usage Guide
+
+MP-DB is a lightweight relational database with a CLI REPL interface, SQL parsing powered by Apache Calcite, and a custom storage engine with disk persistence.
+
+## Getting Started
+
+### Prerequisites
+
+- Java 17+
+
+### Build & Run
+
+```bash
+# Build the project
+./gradlew clean build
+
+# Start the REPL
+./gradlew bootRun
+```
+
+You will see the interactive prompt:
+
+```
+═══════════════════════════════════════════
+  Welcome to MP(Mykola Pikuza) DB CLI REPL
+═══════════════════════════════════════════
+Powered by Spring Boot and Apache Calcite
+
+mp-db>
+```
+
+## Data Types
+
+| Type       | Description                  | Storage        |
+|------------|------------------------------|----------------|
+| INT        | 32-bit integer               | 4 bytes fixed  |
+| FLOAT      | 32-bit floating point        | 4 bytes fixed  |
+| BOOLEAN    | true / false                 | 1 byte fixed   |
+| VARCHAR(n) | Variable-length string       | 4B prefix + data |
+| TEXT       | Variable-length string (unbounded) | 4B prefix + data |
+
+## SQL Statements
+
+### CREATE TABLE
+
+```sql
+CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN);
+CREATE TABLE products (id INT, name VARCHAR(100), price FLOAT, description TEXT);
+```
+
+### INSERT
+
+```sql
+INSERT INTO users VALUES (1, 'Alice', true);
+INSERT INTO users VALUES (2, 'Bob', false);
+INSERT INTO products VALUES (1, 'Widget', 9.99, 'A fine widget');
+```
+
+Multiple rows in a single statement:
+
+```sql
+INSERT INTO users VALUES (3, 'Charlie', true), (4, 'Diana', false);
+```
+
+### SELECT
+
+Select all rows:
+
+```sql
+SELECT * FROM users;
+```
+
+With a WHERE clause:
+
+```sql
+SELECT * FROM users WHERE active = true;
+SELECT * FROM products WHERE price > 10.0;
+SELECT * FROM users WHERE id >= 2 AND active = true;
+SELECT * FROM users WHERE name = 'Alice' OR name = 'Bob';
+```
+
+Supported comparison operators: `=`, `!=`, `<`, `<=`, `>`, `>=`
+
+Logical operators: `AND`, `OR`
+
+### UPDATE
+
+```sql
+UPDATE users SET name = 'Robert' WHERE id = 2;
+UPDATE users SET active = true;
+UPDATE products SET price = 19.99, name = 'Super Widget' WHERE id = 1;
+```
+
+### DELETE
+
+```sql
+DELETE FROM users WHERE active = false;
+DELETE FROM users WHERE id = 3;
+DELETE FROM users;  -- deletes all rows
+```
+
+### DROP TABLE
+
+```sql
+DROP TABLE users;
+```
+
+## REPL Commands
+
+Commands are prefixed with `:` (colon).
+
+| Command              | Description                        |
+|----------------------|------------------------------------|
+| `:help`, `:h`, `:?` | Show available commands             |
+| `:quit`, `:exit`, `:q` | Exit the REPL                    |
+| `:status`            | Show current system status          |
+| `:debug-ast on`      | Enable AST debug output (default)   |
+| `:debug-ast off`     | Disable AST debug output            |
+
+### Debug AST Mode
+
+When enabled (default), each SQL statement prints the parsed query type and AST before execution:
+
+```
+mp-db> SELECT * FROM users
+Query Type: SELECT
+AST:
+SELECT *
+FROM `USERS`
+ ID | NAME  | ACTIVE
+----+-------+-------
+ 1  | Alice | true
+(1 row)
+```
+
+Disable it for cleaner output:
+
+```
+mp-db> :debug-ast off
+```
+
+## Data Persistence
+
+MP-DB persists all data to disk automatically. Tables and their data survive application restarts.
+
+- **Catalog metadata** is stored in `<data-dir>/catalog.meta`
+- **Table data** is stored in `<data-dir>/<TABLE_NAME>.dat` (one file per table)
+
+The default data directory is `./data`. It can be changed in `application.yml`:
+
+```yaml
+app:
+  data-dir: "./data"
+```
+
+## Storage Architecture
+
+MP-DB uses a page-based storage engine:
+
+- **Page size**: 4096 bytes (fixed)
+- **Page layout**: Slotted pages with a header, slot directory, and backward-growing tuple area
+- **Heap files**: One heap file per table, composed of multiple pages
+- **Free-space map**: Tracks available space per page for efficient inserts
+- **Serialization**: Fixed-length types stored directly; variable-length types use a 4-byte length prefix followed by UTF-8 data
+
+## Example Session
+
+```
+mp-db> :debug-ast off
+Debug AST mode disabled.
+
+mp-db> CREATE TABLE employees (id INT, name VARCHAR(100), salary FLOAT, active BOOLEAN)
+Table 'EMPLOYEES' created.
+
+mp-db> INSERT INTO employees VALUES (1, 'Alice', 75000.0, true)
+Inserted 1 row.
+
+mp-db> INSERT INTO employees VALUES (2, 'Bob', 65000.0, true)
+Inserted 1 row.
+
+mp-db> INSERT INTO employees VALUES (3, 'Charlie', 80000.0, false)
+Inserted 1 row.
+
+mp-db> SELECT * FROM employees
+ ID | NAME    | SALARY  | ACTIVE
+----+---------+---------+-------
+ 1  | Alice   | 75000.0 | true
+ 2  | Bob     | 65000.0 | true
+ 3  | Charlie | 80000.0 | false
+(3 rows)
+
+mp-db> UPDATE employees SET salary = 70000.0 WHERE name = 'Bob'
+Updated 1 row.
+
+mp-db> SELECT * FROM employees WHERE active = true AND salary >= 70000.0
+ ID | NAME  | SALARY  | ACTIVE
+----+-------+---------+-------
+ 1  | Alice | 75000.0 | true
+ 2  | Bob   | 70000.0 | true
+(2 rows)
+
+mp-db> DELETE FROM employees WHERE active = false
+Deleted 1 row.
+
+mp-db> SELECT * FROM employees
+ ID | NAME  | SALARY  | ACTIVE
+----+-------+---------+-------
+ 1  | Alice | 75000.0 | true
+ 2  | Bob   | 70000.0 | true
+(2 rows)
+
+mp-db> DROP TABLE employees
+Table 'EMPLOYEES' dropped.
+
+mp-db> :quit
+Goodbye!
+```
+
+## Current Limitations
+
+- No `NULL` support (all columns require values)
+- No `JOIN` or subquery support in SELECT
+- No column-list projection (only `SELECT *`)
+- No `ORDER BY`, `GROUP BY`, or aggregate functions
+- No transactions or concurrency control
+- Deleted space within pages is not reclaimed (no compaction)

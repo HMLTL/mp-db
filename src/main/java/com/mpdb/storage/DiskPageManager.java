@@ -37,6 +37,7 @@ public class DiskPageManager implements AutoCloseable {
         long offset = (long) pageIndex * SlottedPage.PAGE_SIZE;
         file.seek(offset);
         file.write(data, 0, SlottedPage.PAGE_SIZE);
+        file.getFD().sync();
     }
 
     public void sync() throws IOException {

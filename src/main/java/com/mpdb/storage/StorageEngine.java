@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import jakarta.annotation.PostConstruct;
+import jakarta.annotation.PreDestroy;
 import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.nio.file.Path;
@@ -27,12 +28,6 @@ public class StorageEngine {
         this.catalog = catalog;
     }
 
-    // Package-private constructor for tests (in-memory only)
-    StorageEngine() {
-        this.dataDir = null;
-        this.catalog = null;
-    }
-
     @PostConstruct
     public void init() {
         if (catalog == null) return;
@@ -48,6 +43,14 @@ public class StorageEngine {
                 log.error("Failed to restore heap file for table '{}': {}", schema.getTableName(), e.getMessage());
             }
         }
+    }
+
+    @PreDestroy
+    public void shutdown() {
+        for (HeapFile heapFile : heapFiles.values()) {
+            heapFile.close();
+        }
+        log.info("Closed all heap files.");
     }
 
     public HeapFile createHeapFile(TableSchema schema) {
