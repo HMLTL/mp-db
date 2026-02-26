@@ -31,6 +31,9 @@ dependencies {
     implementation 'org.apache.calcite:calcite-core:1.37.0'
     implementation 'org.apache.calcite:calcite-server:1.37.0'
 
+    // JLine for REPL command history and line editing
+    implementation 'org.jline:jline:3.25.1'
+
     // Lombok
     compileOnly 'org.projectlombok:lombok'
     annotationProcessor 'org.projectlombok:lombok'

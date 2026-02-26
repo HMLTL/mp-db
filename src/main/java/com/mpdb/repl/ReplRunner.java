@@ -1,10 +1,19 @@
 package com.mpdb.repl;
 
+import org.jline.reader.EndOfFileException;
+import org.jline.reader.LineReader;
+import org.jline.reader.LineReaderBuilder;
+import org.jline.reader.UserInterruptException;
+import org.jline.reader.History;
+import org.jline.reader.impl.history.DefaultHistory;
+import org.jline.terminal.Terminal;
+import org.jline.terminal.TerminalBuilder;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.stereotype.Component;
 
-import java.util.Scanner;
+import java.io.IOException;
+import java.nio.file.Path;
 
 @Component
 public class ReplRunner implements CommandLineRunner {
@@ -14,24 +23,40 @@ public class ReplRunner implements CommandLineRunner {
     @Value("${app.prompt:mp-db> }")
     private String prompt;
 
+    @Value("${app.data-dir:./data}")
+    private String dataDir;
+
     public ReplRunner(CommandProcessor commandProcessor) {
         this.commandProcessor = commandProcessor;
     }
 
     @Override
-    public void run(String... args) {
-        Scanner scanner = new Scanner(System.in);
+    public void run(String... args) throws IOException {
+        Terminal terminal = TerminalBuilder.builder()
+                .system(true)
+                .build();
+
+        Path historyFile = Path.of(dataDir, ".mpdb_history");
+
+        LineReader reader = LineReaderBuilder.builder()
+                .terminal(terminal)
+                .history(new DefaultHistory())
+                .variable(LineReader.HISTORY_FILE, historyFile)
+                .build();
 
         printBanner();
 
         while (true) {
-            System.out.print(prompt);
-
-            if (!scanner.hasNextLine()) {
+            String input;
+            try {
+                input = reader.readLine(prompt).trim();
+            } catch (UserInterruptException e) {
+                // Ctrl+C
+                continue;
+            } catch (EndOfFileException e) {
+                // Ctrl+D
                 break;
             }
-
-            String input = scanner.nextLine().trim();
 
             if (input.isEmpty()) {
                 continue;
@@ -54,7 +79,7 @@ public class ReplRunner implements CommandLineRunner {
             }
         }
 
-        scanner.close();
+        terminal.close();
     }
 
     private void printBanner() {
