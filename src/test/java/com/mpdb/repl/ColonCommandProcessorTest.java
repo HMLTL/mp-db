@@ -49,7 +49,7 @@ class ColonCommandProcessorTest {
     void shouldReturnHelpForHelpCommand() {
         String result = processor.process(":help");
         assertNotNull(result);
-        assertTrue(result.contains("Colon-prefixed commands"));
+        assertTrue(result.contains("Commands:"));
         assertTrue(result.contains(":quit"));
         assertTrue(result.contains(":debug-ast"));
     }
@@ -59,7 +59,7 @@ class ColonCommandProcessorTest {
     void shouldReturnHelpForHCommand() {
         String result = processor.process(":h");
         assertNotNull(result);
-        assertTrue(result.contains("Colon-prefixed commands"));
+        assertTrue(result.contains("Commands:"));
     }
 
     @Test
@@ -67,7 +67,7 @@ class ColonCommandProcessorTest {
     void shouldReturnHelpForQuestionMarkCommand() {
         String result = processor.process(":?");
         assertNotNull(result);
-        assertTrue(result.contains("Colon-prefixed commands"));
+        assertTrue(result.contains("Commands:"));
     }
 
     @Test

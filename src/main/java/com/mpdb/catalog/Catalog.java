@@ -23,11 +23,6 @@ public class Catalog {
         this.persistence = new CatalogPersistence(Path.of(dataDir));
     }
 
-    // Package-private constructor for tests (no persistence)
-    Catalog(CatalogPersistence persistence) {
-        this.persistence = persistence;
-    }
-
     @PostConstruct
     public void init() {
         try {

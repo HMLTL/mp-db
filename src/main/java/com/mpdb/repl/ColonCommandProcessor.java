@@ -64,21 +64,21 @@ public class ColonCommandProcessor implements Processor {
 
     private String getHelp() {
         return """
-                Colon-prefixed commands:
-                  :quit, :exit, :q  - Exit the application
-                  :help, :h, :?     - Show this help message
-                  :status           - Show system status (debug modes)
-                  :debug-ast [on|off] - Enable/disable AST debug output
-                
-                SQL Support (parsing & validation only):
-                  SELECT ...        - Parse SELECT queries
-                  INSERT ...        - Parse INSERT queries
-                  UPDATE ...        - Parse UPDATE queries
-                  DELETE FROM ...   - Parse DELETE queries
-                  CREATE ...        - Parse CREATE queries
-                
-                Note: SQL queries are parsed using Apache Calcite.
-                      Execution is not yet implemented.
+                Commands:
+                  :quit, :exit, :q     - Exit the application
+                  :help, :h, :?        - Show this help message
+                  :status              - Show system status (debug modes)
+                  :debug-ast [on|off]  - Enable/disable AST debug output
+
+                SQL Statements:
+                  CREATE TABLE t (col TYPE, ...)  - Create a new table
+                  DROP TABLE t                    - Drop a table
+                  INSERT INTO t VALUES (...)      - Insert rows
+                  SELECT * FROM t [WHERE ...]     - Query rows
+                  UPDATE t SET col=val [WHERE ..] - Update rows
+                  DELETE FROM t [WHERE ...]       - Delete rows
+
+                Supported types: INT, FLOAT, VARCHAR(n), TEXT, BOOLEAN
                 """;
     }
 
