@@ -42,7 +42,7 @@ public enum ColonCommand {
 
     public static ColonCommand from(String name) {
         if (name == null) return WRONG;
-        return BY_NAME.get(name.toLowerCase());
+        return BY_NAME.getOrDefault(name.toLowerCase(), WRONG);
     }
 
     private static void alias(String name, ColonCommand command) {

@@ -1,5 +1,7 @@
 package com.mpdb.repl;
 
+import com.mpdb.executor.SqlExecutor;
+import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
@@ -20,10 +22,13 @@ class SqlQueryProcessorTest {
     @Mock
     private DbState dbState;
 
+    @Mock
+    private SqlExecutor sqlExecutor;
+
     @BeforeEach
     void setUp() {
         MockitoAnnotations.openMocks(this);
-        processor = new SqlQueryProcessor(queryParser, dbState);
+        processor = new SqlQueryProcessor(queryParser, dbState, sqlExecutor);
     }
 
     @Test
@@ -37,7 +42,7 @@ class SqlQueryProcessorTest {
 
         String result = processor.process(sql);
 
-        assertTrue(result.contains("❌ SQL Parse Error"));
+        assertTrue(result.contains("SQL Parse Error"));
         assertTrue(result.contains("Syntax error"));
     }
 
@@ -45,10 +50,13 @@ class SqlQueryProcessorTest {
     @DisplayName("Should verify parser is called with correct SQL")
     void shouldVerifyParserCalledWithCorrectSql() {
         String sql = "SELECT * FROM users";
-        CalciteQueryParser.ParseResult validResult = mock(CalciteQueryParser.ParseResult.class);
-        when(validResult.isValid()).thenReturn(true);
+        SqlNode mockAst = mock(SqlNode.class);
+        CalciteQueryParser.ParseResult validResult = new CalciteQueryParser.ParseResult(
+                true, mockAst, null, sql
+        );
         when(queryParser.parseAndValidate(sql)).thenReturn(validResult);
         when(dbState.isDebugAstMode()).thenReturn(false);
+        when(sqlExecutor.execute(mockAst)).thenReturn("result");
 
         processor.process(sql);
 
@@ -56,13 +64,52 @@ class SqlQueryProcessorTest {
     }
 
     @Test
+    @DisplayName("Should call executor with parsed AST")
+    void shouldCallExecutorWithAst() {
+        String sql = "SELECT * FROM users";
+        SqlNode mockAst = mock(SqlNode.class);
+        CalciteQueryParser.ParseResult validResult = new CalciteQueryParser.ParseResult(
+                true, mockAst, null, sql
+        );
+        when(queryParser.parseAndValidate(sql)).thenReturn(validResult);
+        when(dbState.isDebugAstMode()).thenReturn(false);
+        when(sqlExecutor.execute(mockAst)).thenReturn("query result");
+
+        String result = processor.process(sql);
+
+        verify(sqlExecutor).execute(mockAst);
+        assertEquals("query result", result);
+    }
+
+    @Test
+    @DisplayName("Should return execution error on exception")
+    void shouldReturnExecutionErrorOnException() {
+        String sql = "SELECT * FROM users";
+        SqlNode mockAst = mock(SqlNode.class);
+        CalciteQueryParser.ParseResult validResult = new CalciteQueryParser.ParseResult(
+                true, mockAst, null, sql
+        );
+        when(queryParser.parseAndValidate(sql)).thenReturn(validResult);
+        when(dbState.isDebugAstMode()).thenReturn(false);
+        when(sqlExecutor.execute(mockAst)).thenThrow(new RuntimeException("table not found"));
+
+        String result = processor.process(sql);
+
+        assertTrue(result.contains("Execution Error"));
+        assertTrue(result.contains("table not found"));
+    }
+
+    @Test
     @DisplayName("Should verify debug state is checked")
     void shouldVerifyDebugStateIsChecked() {
         String sql = "SELECT * FROM users";
-        CalciteQueryParser.ParseResult validResult = mock(CalciteQueryParser.ParseResult.class);
-        when(validResult.isValid()).thenReturn(true);
+        SqlNode mockAst = mock(SqlNode.class);
+        CalciteQueryParser.ParseResult validResult = new CalciteQueryParser.ParseResult(
+                true, mockAst, null, sql
+        );
         when(queryParser.parseAndValidate(sql)).thenReturn(validResult);
         when(dbState.isDebugAstMode()).thenReturn(false);
+        when(sqlExecutor.execute(mockAst)).thenReturn("result");
 
         processor.process(sql);
 
@@ -73,10 +120,13 @@ class SqlQueryProcessorTest {
     @DisplayName("Should not call getSqlKind when debug mode is off")
     void shouldNotCallGetSqlKindWhenDebugOff() {
         String sql = "SELECT * FROM users";
-        CalciteQueryParser.ParseResult validResult = mock(CalciteQueryParser.ParseResult.class);
-        when(validResult.isValid()).thenReturn(true);
+        SqlNode mockAst = mock(SqlNode.class);
+        CalciteQueryParser.ParseResult validResult = spy(new CalciteQueryParser.ParseResult(
+                true, mockAst, null, sql
+        ));
         when(queryParser.parseAndValidate(sql)).thenReturn(validResult);
         when(dbState.isDebugAstMode()).thenReturn(false);
+        when(sqlExecutor.execute(mockAst)).thenReturn("result");
 
         processor.process(sql);
 
@@ -84,4 +134,3 @@ class SqlQueryProcessorTest {
         verify(validResult, never()).getAstString();
     }
 }
-

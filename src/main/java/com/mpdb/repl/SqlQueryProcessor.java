@@ -1,5 +1,6 @@
 package com.mpdb.repl;
 
+import com.mpdb.executor.SqlExecutor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -12,10 +13,12 @@ public class SqlQueryProcessor implements Processor {
 
     private final CalciteQueryParser queryParser;
     private final DbState dbState;
+    private final SqlExecutor sqlExecutor;
 
-    public SqlQueryProcessor(CalciteQueryParser queryParser, DbState dbState) {
+    public SqlQueryProcessor(CalciteQueryParser queryParser, DbState dbState, SqlExecutor sqlExecutor) {
         this.queryParser = queryParser;
         this.dbState = dbState;
+        this.sqlExecutor = sqlExecutor;
     }
 
     @Override
@@ -25,12 +28,12 @@ public class SqlQueryProcessor implements Processor {
 
     /**
      * Handle SQL query using Calcite parser.
-     * Parses the query, builds AST, and validates syntax.
+     * Parses the query, builds AST, validates syntax, and executes.
      */
     private String handleSqlQuery(String sql) {
         CalciteQueryParser.ParseResult result = queryParser.parseAndValidate(sql);
         if (!result.isValid()) {
-            return "❌ SQL Parse Error:\n" + result.errorMessage();
+            return "SQL Parse Error:\n" + result.errorMessage();
         }
 
         if (dbState.isDebugAstMode()) {
@@ -38,8 +41,12 @@ public class SqlQueryProcessor implements Processor {
             String astString = result.getAstString();
             System.out.printf("\nQuery Type: %s\nAST:\n%s\n", queryType, astString);
         }
-        return "\n⚠️  Note: Query execution is not yet implemented.";
+
+        try {
+            return sqlExecutor.execute(result.ast());
+        } catch (Exception e) {
+            return "Execution Error: " + e.getMessage();
+        }
     }
 
 }
-
