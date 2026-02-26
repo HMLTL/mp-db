@@ -135,6 +135,76 @@ class TupleSerializerTest {
     }
 
     @Test
+    void roundTrip_nullInt() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("name", ColumnType.VARCHAR, 50)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{null, "Alice"});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertNull(restored.getValue(0));
+        assertEquals("Alice", restored.getValue(1));
+    }
+
+    @Test
+    void roundTrip_nullVarchar() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("name", ColumnType.VARCHAR, 50)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{1, null});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertEquals(1, restored.getValue(0));
+        assertNull(restored.getValue(1));
+    }
+
+    @Test
+    void roundTrip_allNulls() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("name", ColumnType.VARCHAR, 50),
+                new ColumnDefinition("active", ColumnType.BOOLEAN),
+                new ColumnDefinition("price", ColumnType.FLOAT)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{null, null, null, null});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertNull(restored.getValue(0));
+        assertNull(restored.getValue(1));
+        assertNull(restored.getValue(2));
+        assertNull(restored.getValue(3));
+    }
+
+    @Test
+    void roundTrip_mixedNullsAndValues() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("name", ColumnType.VARCHAR, 50),
+                new ColumnDefinition("active", ColumnType.BOOLEAN),
+                new ColumnDefinition("price", ColumnType.FLOAT),
+                new ColumnDefinition("desc", ColumnType.TEXT)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{1, null, true, null, "hello"});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertEquals(1, restored.getValue(0));
+        assertNull(restored.getValue(1));
+        assertEquals(true, restored.getValue(2));
+        assertNull(restored.getValue(3));
+        assertEquals("hello", restored.getValue(4));
+    }
+
+    @Test
     void roundTrip_booleanFalse() {
         TableSchema schema = new TableSchema("t", List.of(
                 new ColumnDefinition("flag", ColumnType.BOOLEAN)

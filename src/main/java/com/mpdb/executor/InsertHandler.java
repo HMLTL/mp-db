@@ -57,6 +57,10 @@ public class InsertHandler implements StatementHandler {
     }
 
     private Object extractValue(SqlNode node, ColumnDefinition colDef) {
+        if (node instanceof SqlLiteral lit
+                && lit.getTypeName() == org.apache.calcite.sql.type.SqlTypeName.NULL) {
+            return null;
+        }
         if (node instanceof SqlNumericLiteral numLit) {
             if (colDef.type() == com.mpdb.catalog.ColumnType.FLOAT) {
                 return numLit.bigDecimalValue().floatValue();

@@ -137,6 +137,33 @@ class PredicateBuilderTest {
     }
 
     @Test
+    void isNull_matchesNullValue() throws Exception {
+        SqlNode where = parseWhere("SELECT * FROM users WHERE name IS NULL");
+        Predicate<Tuple> pred = predicateBuilder.build(where, schema);
+
+        assertTrue(pred.test(new Tuple(schema, new Object[]{1, null, true})));
+        assertFalse(pred.test(new Tuple(schema, new Object[]{2, "Bob", false})));
+    }
+
+    @Test
+    void isNotNull_matchesNonNullValue() throws Exception {
+        SqlNode where = parseWhere("SELECT * FROM users WHERE name IS NOT NULL");
+        Predicate<Tuple> pred = predicateBuilder.build(where, schema);
+
+        assertFalse(pred.test(new Tuple(schema, new Object[]{1, null, true})));
+        assertTrue(pred.test(new Tuple(schema, new Object[]{2, "Bob", false})));
+    }
+
+    @Test
+    void comparisonWithNullValue_returnsFalse() throws Exception {
+        SqlNode where = parseWhere("SELECT * FROM users WHERE name = 'Alice'");
+        Predicate<Tuple> pred = predicateBuilder.build(where, schema);
+
+        // NULL compared with anything returns false (SQL three-valued logic)
+        assertFalse(pred.test(new Tuple(schema, new Object[]{1, null, true})));
+    }
+
+    @Test
     void equals_boolean() throws Exception {
         SqlNode where = parseWhere("SELECT * FROM users WHERE active = false");
         Predicate<Tuple> pred = predicateBuilder.build(where, schema);

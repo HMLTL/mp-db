@@ -10,11 +10,24 @@ public class TupleSerializer {
 
     public byte[] serialize(Tuple tuple) {
         TableSchema schema = tuple.getSchema();
+        int colCount = schema.getColumnCount();
+        int nullBitmapBytes = (colCount + 7) / 8;
         int totalSize = calculateSize(tuple);
         ByteBuffer buffer = ByteBuffer.allocate(totalSize);
         buffer.putInt(totalSize);
 
-        for (int i = 0; i < schema.getColumnCount(); i++) {
+        // Write null bitmap
+        byte[] nullBitmap = new byte[nullBitmapBytes];
+        for (int i = 0; i < colCount; i++) {
+            if (tuple.getValue(i) == null) {
+                nullBitmap[i / 8] |= (1 << (i % 8));
+            }
+        }
+        buffer.put(nullBitmap);
+
+        // Write column values (skip nulls)
+        for (int i = 0; i < colCount; i++) {
+            if (tuple.getValue(i) == null) continue;
             ColumnDefinition col = schema.getColumn(i);
             Object value = tuple.getValue(i);
 
@@ -35,9 +48,20 @@ public class TupleSerializer {
     public Tuple deserialize(byte[] data, TableSchema schema) {
         ByteBuffer buffer = ByteBuffer.wrap(data);
         int totalSize = buffer.getInt(); // read past size header
+        int colCount = schema.getColumnCount();
+        int nullBitmapBytes = (colCount + 7) / 8;
 
-        Object[] values = new Object[schema.getColumnCount()];
-        for (int i = 0; i < schema.getColumnCount(); i++) {
+        // Read null bitmap
+        byte[] nullBitmap = new byte[nullBitmapBytes];
+        buffer.get(nullBitmap);
+
+        Object[] values = new Object[colCount];
+        for (int i = 0; i < colCount; i++) {
+            boolean isNull = (nullBitmap[i / 8] & (1 << (i % 8))) != 0;
+            if (isNull) {
+                values[i] = null;
+                continue;
+            }
             ColumnDefinition col = schema.getColumn(i);
 
             switch (col.type()) {
@@ -57,8 +81,11 @@ public class TupleSerializer {
 
     private int calculateSize(Tuple tuple) {
         TableSchema schema = tuple.getSchema();
+        int colCount = schema.getColumnCount();
         int size = 4; // total size header
-        for (int i = 0; i < schema.getColumnCount(); i++) {
+        size += (colCount + 7) / 8; // null bitmap
+        for (int i = 0; i < colCount; i++) {
+            if (tuple.getValue(i) == null) continue;
             ColumnDefinition col = schema.getColumn(i);
             switch (col.type()) {
                 case INT -> size += 4;

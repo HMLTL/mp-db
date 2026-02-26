@@ -34,6 +34,22 @@ public class PredicateBuilder {
                 return left.or(right);
             }
 
+            // IS NULL (postfix, 1 operand)
+            if (op == SqlStdOperatorTable.IS_NULL) {
+                SqlIdentifier id = (SqlIdentifier) call.operand(0);
+                int colIndex = schema.getColumnIndex(id.getSimple());
+                if (colIndex < 0) throw new IllegalArgumentException("Unknown column: " + id.getSimple());
+                return tuple -> tuple.getValue(colIndex) == null;
+            }
+
+            // IS NOT NULL (postfix, 1 operand)
+            if (op == SqlStdOperatorTable.IS_NOT_NULL) {
+                SqlIdentifier id = (SqlIdentifier) call.operand(0);
+                int colIndex = schema.getColumnIndex(id.getSimple());
+                if (colIndex < 0) throw new IllegalArgumentException("Unknown column: " + id.getSimple());
+                return tuple -> tuple.getValue(colIndex) != null;
+            }
+
             // Comparison operators
             if (call.operandCount() == 2) {
                 return buildComparison(call, schema);
@@ -92,6 +108,10 @@ public class PredicateBuilder {
     }
 
     private Object extractLiteral(SqlNode node, ColumnDefinition colDef) {
+        if (node instanceof SqlLiteral lit
+                && lit.getTypeName() == org.apache.calcite.sql.type.SqlTypeName.NULL) {
+            return null;
+        }
         if (node instanceof SqlNumericLiteral numLit) {
             if (colDef.type() == com.mpdb.catalog.ColumnType.FLOAT) {
                 return numLit.bigDecimalValue().floatValue();

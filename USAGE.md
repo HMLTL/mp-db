@@ -66,6 +66,7 @@ CREATE TABLE products (id INT, name VARCHAR(100), price FLOAT, description TEXT)
 ```sql
 INSERT INTO users VALUES (1, 'Alice', true);
 INSERT INTO users VALUES (2, 'Bob', false);
+INSERT INTO users VALUES (3, NULL, true);
 INSERT INTO products VALUES (1, 'Widget', 9.99, 'A fine widget');
 ```
 
@@ -92,15 +93,25 @@ SELECT * FROM users WHERE id >= 2 AND active = true;
 SELECT * FROM users WHERE name = 'Alice' OR name = 'Bob';
 ```
 
+NULL checks:
+
+```sql
+SELECT * FROM users WHERE name IS NULL;
+SELECT * FROM users WHERE name IS NOT NULL;
+```
+
 Supported comparison operators: `=`, `!=`, `<`, `<=`, `>`, `>=`
 
 Logical operators: `AND`, `OR`
+
+Note: comparisons with NULL follow SQL three-valued logic — `NULL = NULL` returns false. Use `IS NULL` instead.
 
 ### UPDATE
 
 ```sql
 UPDATE users SET name = 'Robert' WHERE id = 2;
 UPDATE users SET active = true;
+UPDATE users SET name = NULL WHERE id = 3;
 UPDATE products SET price = 19.99, name = 'Super Widget' WHERE id = 1;
 ```
 
@@ -246,7 +257,6 @@ Goodbye!
 
 ## Current Limitations
 
-- No `NULL` support (all columns require values)
 - No `JOIN` or subquery support in SELECT
 - No column-list projection (only `SELECT *`)
 - No `ORDER BY`, `GROUP BY`, or aggregate functions

@@ -219,6 +219,56 @@ class SqlExecutorTest {
     }
 
     @Test
+    void insertWithNull() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        String result = execute("INSERT INTO users VALUES (1, NULL, true)");
+        assertTrue(result.contains("Inserted 1 row."));
+
+        String selectResult = execute("SELECT * FROM users");
+        assertTrue(selectResult.contains("NULL"));
+        assertTrue(selectResult.contains("(1 row)"));
+    }
+
+    @Test
+    void selectWhereIsNull() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO users VALUES (1, NULL, true)");
+        execute("INSERT INTO users VALUES (2, 'Bob', false)");
+
+        String result = execute("SELECT * FROM users WHERE name IS NULL");
+        assertTrue(result.contains("(1 row)"));
+        assertFalse(result.contains("Bob"));
+
+        String result2 = execute("SELECT * FROM users WHERE name IS NOT NULL");
+        assertTrue(result2.contains("Bob"));
+        assertTrue(result2.contains("(1 row)"));
+    }
+
+    @Test
+    void updateSetToNull() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO users VALUES (1, 'Alice', true)");
+
+        execute("UPDATE users SET name = NULL WHERE id = 1");
+
+        String result = execute("SELECT * FROM users");
+        assertTrue(result.contains("NULL"));
+        assertFalse(result.contains("Alice"));
+    }
+
+    @Test
+    void updateWhereIsNull() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO users VALUES (1, NULL, true)");
+        execute("INSERT INTO users VALUES (2, 'Bob', false)");
+
+        execute("UPDATE users SET name = 'Unknown' WHERE name IS NULL");
+
+        String result = execute("SELECT * FROM users WHERE id = 1");
+        assertTrue(result.contains("Unknown"));
+    }
+
+    @Test
     void unsupportedStatement_shouldThrow() throws Exception {
         // MERGE is parsed by Calcite but not supported by our executor
         assertThrows(UnsupportedOperationException.class, () -> {
