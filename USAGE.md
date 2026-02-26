@@ -7,6 +7,7 @@ MP-DB is a lightweight relational database with a CLI REPL interface, SQL parsin
 ### Prerequisites
 
 - Java 17+
+- Docker (optional)
 
 ### Build & Run
 
@@ -17,6 +18,18 @@ MP-DB is a lightweight relational database with a CLI REPL interface, SQL parsin
 # Start the REPL
 ./gradlew bootRun
 ```
+
+### Run with Docker
+
+```bash
+# Build the image
+docker build -t mp-db .
+
+# Run interactively with persistent data volume
+docker run -it -v mp-db-data:/app/data mp-db
+```
+
+The `-it` flags are required for interactive terminal input with command history support.
 
 You will see the interactive prompt:
 
@@ -116,6 +129,21 @@ Commands are prefixed with `:` (colon).
 | `:status`            | Show current system status          |
 | `:debug-ast on`      | Enable AST debug output (default)   |
 | `:debug-ast off`     | Disable AST debug output            |
+
+### Command History & Keyboard Shortcuts
+
+MP-DB supports full command history with arrow key navigation (powered by JLine):
+
+| Key          | Action                              |
+|--------------|-------------------------------------|
+| Up Arrow     | Previous command from history       |
+| Down Arrow   | Next command in history             |
+| Left / Right | Move cursor within the current line |
+| Home / End   | Jump to start / end of line         |
+| Ctrl+C       | Cancel current input                |
+| Ctrl+D       | Exit the REPL                       |
+
+Command history is saved to `<data-dir>/.mpdb_history` and persists across sessions.
 
 ### Debug AST Mode
 
