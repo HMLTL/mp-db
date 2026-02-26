@@ -1,197 +1,60 @@
-# (Mykola Pikuza) MP DB - CLI REPL Application
+# MP-DB (Mykola Pikuza DB)
 
-A SQL-powered CLI REPL (Read-Eval-Print Loop) application built with Spring Boot 3 and Apache Calcite.
+A lightweight relational database with an interactive CLI REPL, SQL parsing via Apache Calcite, and a custom page-based storage engine with disk persistence.
 
 ## Features
 
-- Interactive command-line interface with `mp-db>` prompt
-- SQL query parsing and validation using Apache Calcite
-- AST (Abstract Syntax Tree) generation for SQL queries
-- Debug modes for SQL analysis
-- Colon-prefixed meta commands for system control
-- Built with Spring Boot 3 for easy dependency injection and extensibility
-- Clean, refactored architecture with separated concerns
+- Interactive REPL with command history (Up/Down arrow keys)
+- Full SQL support: `CREATE TABLE`, `INSERT`, `SELECT`, `UPDATE`, `DELETE`, `DROP TABLE`
+- WHERE clauses with `=`, `!=`, `<`, `<=`, `>`, `>=`, `AND`, `OR`
+- Data types: `INT`, `FLOAT`, `VARCHAR(n)`, `TEXT`, `BOOLEAN`
+- Disk persistence — tables and data survive restarts
+- Page-based storage engine with slotted pages (4096B) and free-space map
+- Debug mode to inspect parsed AST
 
-## Available Commands
-
-### Colon-Prefixed Commands (Meta Commands)
-
-- `:help`, `:h`, `:?` - Show help message
-- `:quit`, `:exit`, `:q` - Exit the application
-- `:status` - Show system status (debug modes)
-- `:debug-ast [on|off]` - Enable/disable AST debug output
-
-### SQL Commands
-
-- `SELECT ...` - Parse and validate SELECT queries
-- `INSERT ...` - Parse and validate INSERT queries
-- `UPDATE ...` - Parse and validate UPDATE queries
-- `DELETE FROM ...` - Parse and validate DELETE queries
-- `CREATE ...` - Parse and validate CREATE queries
-
-**Note:** SQL queries are currently parsed and validated only. Execution is not yet implemented.
-
-## Requirements
-
-- Java 17 or higher
-- Gradle Wrapper (included: `./gradlew`)
-
-## Building
+## Quick Start
 
 ```bash
 ./gradlew clean build
-```
-
-## Running
-
-```bash
 ./gradlew bootRun
 ```
 
-Or run the JAR directly:
+Or with Docker:
 
 ```bash
-java -jar build/libs/mp-db-1.0.0-SNAPSHOT.jar
+docker build -t mp-db .
+docker run -it -v mp-db-data:/app/data mp-db
 ```
 
-## Testing
-
-The project includes a comprehensive test suite with unit tests covering all major components.
-
-### Run all tests:
-```bash
-./gradlew test
-```
-
-### Run specific test class:
-```bash
-./gradlew test --tests com.mpdb.repl.CommandProcessorTest
-```
-
-### Test Reports:
-- Gradle test reports: `build/reports/tests/test/index.html`
-
-For detailed test documentation, see [TEST_SUMMARY.md](TEST_SUMMARY.md).
-
-## Example Usage
-
-### Basic SQL Parsing
+## Example
 
 ```
-mp-db> SELECT * FROM users;
+mp-db> CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)
+Table 'USERS' created.
 
+mp-db> INSERT INTO users VALUES (1, 'Alice', true)
+Inserted 1 row.
 
-mp-db> SELECT * FROM invalid syntax;
-❌ SQL Parse Error:
-Syntax error at line 1, column 20: Encountered "syntax" at line 1, column 20.
-```
-
-### With Debug Mode
-
-```
-mp-db> :debug-ast on
-✅ Debug AST mode enabled. AST will be shown for all queries.
-
-mp-db> SELECT name, age FROM users WHERE id = 1;
-Query Type: SELECT
-
-AST:
-SELECT `name`,
-  `age`
-FROM `users`
-WHERE (
-  `id` = 1
-)
-
-⚠️  Note: Query execution is not yet implemented.
-
-mp-db> :debug-ast off
-✅ Debug AST mode disabled.
-
-mp-db> SELECT * FROM users;
-
-
-mp-db> :status
-=== System Status ===
-Debug AST mode: OFF
+mp-db> SELECT * FROM users
+ ID | NAME  | ACTIVE
+----+-------+-------
+ 1  | Alice | true
+(1 row)
 
 mp-db> :quit
 Goodbye!
 ```
 
-## Project Structure
-
-```
-mp-db/
-├── src/
-│   └── main/
-│       ├── java/
-│       │   └── com/mpdb/
-│       │       ├── MpDbApplication.java
-│       │       └── repl/
-│       │           ├── Processor.java              # Common interface
-│       │           ├── CommandProcessor.java        # Main coordinator
-│       │           ├── ColonCommandProcessor.java   # Handles :commands
-│       │           ├── SqlQueryProcessor.java       # Handles SQL parsing
-│       │           ├── CalciteQueryParser.java      # Apache Calcite integration
-│       │           └── ReplRunner.java             # REPL loop
-│       └── resources/
-│           └── application.yml
-├── build.gradle
-├── settings.gradle
-├── README.md
-├── ARCHITECTURE.md         # Architecture documentation
-└── COLON_COMMANDS.md      # Colon commands guide
-```
-
-## Technology Stack
-
-- **Java 17** - Modern Java LTS version
-- **Spring Boot 3.x** - Application framework and dependency injection
-- **Apache Calcite 1.37.0** - SQL parsing, validation, and AST generation
-- **SLF4J with Logback** - Logging framework
-- **Lombok** - Code generation for getters/setters
-- **Gradle** - Build and dependency management
-
-## Architecture
-
-The application follows a clean, modular architecture with separated concerns:
-
-### Core Components
-
-1. **Processor Interface** - Common contract for all command processors
-2. **CommandProcessor** - Main coordinator that routes commands using if statements
-3. **ColonCommandProcessor** - Handles meta commands (`:quit`, `:help`, `:debug-ast`, etc.)
-4. **SqlQueryProcessor** - Handles SQL query parsing using Apache Calcite
-5. **CalciteQueryParser** - Wraps Apache Calcite for SQL parsing and AST generation
-6. **DebugState** - Centralized state management for debug modes
-7. **ReplRunner** - Main REPL loop for user interaction
-
-### Design Patterns
-
-- **Chain of Responsibility** - Command routing through processors
-- **Dependency Injection** - Spring Boot managed beans
-- **Single Responsibility** - Each processor has one clear purpose
-- **State Management** - Centralized debug state
-
-For detailed architecture documentation, see [ARCHITECTURE.md](ARCHITECTURE.md).
-
-## Extending the Application
-
-You can easily extend the application by:
-
-1. **Adding new colon commands** - Extend `ColonCommandProcessor`
-2. **Adding new SQL features** - Extend `SqlQueryProcessor` or `CalciteQueryParser`
-3. **Adding new processors** - Implement the `Processor` interface and add to `CommandProcessor`
-4. **Adding new debug modes** - Add fields to a shared state component
-5. **Implementing SQL execution** - Add execution logic to `SqlQueryProcessor`
-6. **Adding persistent storage** - Inject database access components
-
 ## Documentation
 
-- [ARCHITECTURE.md](ARCHITECTURE.md) - Detailed architecture documentation
-- [COLON_COMMANDS.md](COLON_COMMANDS.md) - Guide to colon-prefixed commands
-- [TEST_SUMMARY.md](TEST_SUMMARY.md) - Comprehensive test documentation
+See [USAGE.md](USAGE.md) for full documentation including all SQL statements, REPL commands, keyboard shortcuts, persistence details, and storage architecture.
+
+## Tech Stack
+
+- Java 17, Spring Boot 3.4, Gradle
+- Apache Calcite 1.37.0 (SQL parsing + DDL)
+- JLine 3 (REPL with command history)
+- JUnit 5 + Mockito (tests)
 
 ## License
 

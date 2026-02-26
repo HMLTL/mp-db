@@ -31,7 +31,11 @@ public class CalciteQueryParser {
      * @throws SqlParseException if SQL syntax is invalid
      */
     public SqlNode parse(String sql) throws SqlParseException {
-        SqlParser parser = SqlParser.create(sql, parserConfig);
+        String trimmed = sql.stripTrailing();
+        if (trimmed.endsWith(";")) {
+            trimmed = trimmed.substring(0, trimmed.length() - 1);
+        }
+        SqlParser parser = SqlParser.create(trimmed, parserConfig);
         return parser.parseStmt();
     }
 
