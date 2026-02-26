@@ -132,6 +132,53 @@ class SqlExecutorTest {
     }
 
     @Test
+    void createTable_withFloatAndText() throws Exception {
+        String result = execute("CREATE TABLE products (id INT, name VARCHAR(100), price FLOAT, description TEXT, active BOOLEAN)");
+        assertTrue(result.contains("created"));
+    }
+
+    @Test
+    void insertAndSelect_floatAndText() throws Exception {
+        execute("CREATE TABLE products (id INT, name VARCHAR(100), price FLOAT, description TEXT, active BOOLEAN)");
+        execute("INSERT INTO products VALUES (1, 'Widget', 9.99, 'A fine widget', true)");
+        execute("INSERT INTO products VALUES (2, 'Gadget', 24.5, 'An even finer gadget', false)");
+
+        String result = execute("SELECT * FROM products");
+        assertTrue(result.contains("Widget"));
+        assertTrue(result.contains("Gadget"));
+        assertTrue(result.contains("9.99"));
+        assertTrue(result.contains("24.5"));
+        assertTrue(result.contains("A fine widget"));
+        assertTrue(result.contains("(2 rows)"));
+    }
+
+    @Test
+    void selectWithWhere_float() throws Exception {
+        execute("CREATE TABLE products (id INT, price FLOAT)");
+        execute("INSERT INTO products VALUES (1, 9.99)");
+        execute("INSERT INTO products VALUES (2, 24.5)");
+
+        String result = execute("SELECT * FROM products WHERE price > 10.0");
+        assertTrue(result.contains("24.5"));
+        assertFalse(result.contains("9.99"));
+        assertTrue(result.contains("(1 row)"));
+    }
+
+    @Test
+    void deleteWithFloat_andText() throws Exception {
+        execute("CREATE TABLE products (id INT, price FLOAT, description TEXT, active BOOLEAN)");
+        execute("INSERT INTO products VALUES (1, 9.99, 'A fine widget', true)");
+        execute("INSERT INTO products VALUES (2, 24.5, 'An even finer gadget', false)");
+
+        execute("DELETE FROM products WHERE active = false");
+
+        String result = execute("SELECT * FROM products");
+        assertTrue(result.contains("9.99"));
+        assertFalse(result.contains("24.5"));
+        assertTrue(result.contains("(1 row)"));
+    }
+
+    @Test
     void unsupportedStatement_shouldThrow() throws Exception {
         // UPDATE is parsed by Calcite but not supported by our executor
         SqlNode node = parser.parse("UPDATE users SET name = 'x' WHERE id = 1");

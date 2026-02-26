@@ -109,6 +109,34 @@ class PredicateBuilderTest {
     }
 
     @Test
+    void greaterThan_float() throws Exception {
+        TableSchema floatSchema = new TableSchema("products", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("price", ColumnType.FLOAT)
+        ));
+        CalciteQueryParser p = new CalciteQueryParser();
+        SqlNode where = ((SqlSelect) p.parse("SELECT * FROM products WHERE price > 10.0")).getWhere();
+        Predicate<Tuple> pred = predicateBuilder.build(where, floatSchema);
+
+        assertTrue(pred.test(new Tuple(floatSchema, new Object[]{1, 24.5f})));
+        assertFalse(pred.test(new Tuple(floatSchema, new Object[]{2, 9.99f})));
+    }
+
+    @Test
+    void equals_float() throws Exception {
+        TableSchema floatSchema = new TableSchema("products", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("price", ColumnType.FLOAT)
+        ));
+        CalciteQueryParser p = new CalciteQueryParser();
+        SqlNode where = ((SqlSelect) p.parse("SELECT * FROM products WHERE price = 9.99")).getWhere();
+        Predicate<Tuple> pred = predicateBuilder.build(where, floatSchema);
+
+        assertTrue(pred.test(new Tuple(floatSchema, new Object[]{1, 9.99f})));
+        assertFalse(pred.test(new Tuple(floatSchema, new Object[]{2, 24.5f})));
+    }
+
+    @Test
     void equals_boolean() throws Exception {
         SqlNode where = parseWhere("SELECT * FROM users WHERE active = false");
         Predicate<Tuple> pred = predicateBuilder.build(where, schema);

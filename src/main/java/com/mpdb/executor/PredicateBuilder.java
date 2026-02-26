@@ -73,6 +73,8 @@ public class PredicateBuilder {
                 cmp = Integer.compare(iv, il);
             } else if (value instanceof String sv && literal instanceof String sl) {
                 cmp = sv.compareTo(sl);
+            } else if (value instanceof Float fv && literal instanceof Float fl) {
+                cmp = Float.compare(fv, fl);
             } else if (value instanceof Boolean bv && literal instanceof Boolean bl) {
                 cmp = Boolean.compare(bv, bl);
             } else {
@@ -91,6 +93,9 @@ public class PredicateBuilder {
 
     private Object extractLiteral(SqlNode node, ColumnDefinition colDef) {
         if (node instanceof SqlNumericLiteral numLit) {
+            if (colDef.type() == com.mpdb.catalog.ColumnType.FLOAT) {
+                return numLit.bigDecimalValue().floatValue();
+            }
             return numLit.intValue(true);
         }
         if (node instanceof SqlCharStringLiteral strLit) {

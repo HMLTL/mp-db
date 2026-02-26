@@ -20,8 +20,9 @@ public class TupleSerializer {
 
             switch (col.type()) {
                 case INT -> buffer.putInt((Integer) value);
+                case FLOAT -> buffer.putFloat((Float) value);
                 case BOOLEAN -> buffer.put((byte) ((Boolean) value ? 1 : 0));
-                case VARCHAR -> {
+                case VARCHAR, TEXT -> {
                     byte[] bytes = ((String) value).getBytes(StandardCharsets.UTF_8);
                     buffer.putInt(bytes.length);
                     buffer.put(bytes);
@@ -41,8 +42,9 @@ public class TupleSerializer {
 
             switch (col.type()) {
                 case INT -> values[i] = buffer.getInt();
+                case FLOAT -> values[i] = buffer.getFloat();
                 case BOOLEAN -> values[i] = buffer.get() != 0;
-                case VARCHAR -> {
+                case VARCHAR, TEXT -> {
                     int len = buffer.getInt();
                     byte[] bytes = new byte[len];
                     buffer.get(bytes);
@@ -60,8 +62,9 @@ public class TupleSerializer {
             ColumnDefinition col = schema.getColumn(i);
             switch (col.type()) {
                 case INT -> size += 4;
+                case FLOAT -> size += 4;
                 case BOOLEAN -> size += 1;
-                case VARCHAR -> {
+                case VARCHAR, TEXT -> {
                     byte[] bytes = ((String) tuple.getValue(i)).getBytes(StandardCharsets.UTF_8);
                     size += 4 + bytes.length;
                 }

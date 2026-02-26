@@ -58,6 +58,9 @@ public class InsertHandler implements StatementHandler {
 
     private Object extractValue(SqlNode node, ColumnDefinition colDef) {
         if (node instanceof SqlNumericLiteral numLit) {
+            if (colDef.type() == com.mpdb.catalog.ColumnType.FLOAT) {
+                return numLit.bigDecimalValue().floatValue();
+            }
             return numLit.intValue(true);
         }
         if (node instanceof SqlCharStringLiteral strLit) {

@@ -109,6 +109,32 @@ class TupleSerializerTest {
     }
 
     @Test
+    void roundTrip_floatColumn() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("price", ColumnType.FLOAT)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{9.99f});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertEquals(9.99f, restored.getValue(0));
+    }
+
+    @Test
+    void roundTrip_textColumn() {
+        TableSchema schema = new TableSchema("t", List.of(
+                new ColumnDefinition("description", ColumnType.TEXT)
+        ));
+        Tuple original = new Tuple(schema, new Object[]{"A long description"});
+
+        byte[] data = serializer.serialize(original);
+        Tuple restored = serializer.deserialize(data, schema);
+
+        assertEquals("A long description", restored.getValue(0));
+    }
+
+    @Test
     void roundTrip_booleanFalse() {
         TableSchema schema = new TableSchema("t", List.of(
                 new ColumnDefinition("flag", ColumnType.BOOLEAN)

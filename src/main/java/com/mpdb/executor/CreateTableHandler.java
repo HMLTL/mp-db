@@ -57,6 +57,11 @@ public class CreateTableHandler implements StatementHandler {
                         }
                         if (maxLength <= 0) maxLength = 255;
                     }
+                    case "FLOAT", "REAL" -> colType = ColumnType.FLOAT;
+                    case "TEXT" -> {
+                        colType = ColumnType.TEXT;
+                        maxLength = 0;
+                    }
                     case "BOOLEAN", "BOOL" -> colType = ColumnType.BOOLEAN;
                     default -> throw new UnsupportedOperationException("Unsupported column type: " + typeName);
                 }
