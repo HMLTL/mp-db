@@ -8,7 +8,7 @@ public class SlottedPage {
 
     public static final int PAGE_SIZE = 4096;
     private static final int HEADER_SIZE = 8; // 2B slotCount + 2B freeSpacePtr + 4B pageId
-    private static final int SLOT_SIZE = 4;   // 2B offset + 2B length
+    static final int SLOT_SIZE = 4;   // 2B offset + 2B length
     private static final short DELETED_SENTINEL = (short) 0xFFFF;
 
     private final byte[] data;
@@ -21,6 +21,20 @@ public class SlottedPage {
         buf.putShort((short) 0);           // slotCount
         buf.putShort((short) PAGE_SIZE);    // freeSpacePtr (points to end)
         buf.putInt(pageId);                 // pageId
+    }
+
+    /** Reconstruct a page from raw bytes loaded from disk. */
+    public SlottedPage(byte[] rawData) {
+        if (rawData.length != PAGE_SIZE) {
+            throw new IllegalArgumentException("Page data must be " + PAGE_SIZE + " bytes");
+        }
+        this.data = rawData;
+        this.pageId = ByteBuffer.wrap(data, 4, 4).getInt();
+    }
+
+    /** Returns the backing byte array for writing to disk. */
+    public byte[] getRawData() {
+        return data;
     }
 
     public int getPageId() {

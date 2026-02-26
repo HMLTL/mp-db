@@ -11,17 +11,20 @@ public class SqlExecutor {
     private final InsertHandler insertHandler;
     private final SelectHandler selectHandler;
     private final DeleteHandler deleteHandler;
+    private final UpdateHandler updateHandler;
     private final DropTableHandler dropTableHandler;
 
     public SqlExecutor(CreateTableHandler createTableHandler,
                        InsertHandler insertHandler,
                        SelectHandler selectHandler,
                        DeleteHandler deleteHandler,
+                       UpdateHandler updateHandler,
                        DropTableHandler dropTableHandler) {
         this.createTableHandler = createTableHandler;
         this.insertHandler = insertHandler;
         this.selectHandler = selectHandler;
         this.deleteHandler = deleteHandler;
+        this.updateHandler = updateHandler;
         this.dropTableHandler = dropTableHandler;
     }
 
@@ -33,6 +36,7 @@ public class SqlExecutor {
             case INSERT -> insertHandler.handle(node);
             case SELECT -> selectHandler.handle(node);
             case DELETE -> deleteHandler.handle(node);
+            case UPDATE -> updateHandler.handle(node);
             case DROP_TABLE -> dropTableHandler.handle(node);
             default -> throw new UnsupportedOperationException("Unsupported SQL statement: " + kind);
         };

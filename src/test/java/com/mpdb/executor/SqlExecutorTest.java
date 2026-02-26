@@ -6,6 +6,9 @@ import com.mpdb.storage.StorageEngine;
 import org.apache.calcite.sql.SqlNode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.io.TempDir;
+
+import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -14,10 +17,14 @@ class SqlExecutorTest {
     private SqlExecutor executor;
     private CalciteQueryParser parser;
 
+    @TempDir
+    Path tempDir;
+
     @BeforeEach
     void setUp() {
-        Catalog catalog = new Catalog();
-        StorageEngine storageEngine = new StorageEngine();
+        Catalog catalog = new Catalog(tempDir.toString());
+        catalog.init();
+        StorageEngine storageEngine = new StorageEngine(tempDir.toString(), catalog);
         PredicateBuilder predicateBuilder = new PredicateBuilder();
 
         executor = new SqlExecutor(
@@ -25,6 +32,7 @@ class SqlExecutorTest {
                 new InsertHandler(catalog, storageEngine),
                 new SelectHandler(catalog, storageEngine, predicateBuilder),
                 new DeleteHandler(catalog, storageEngine, predicateBuilder),
+                new UpdateHandler(catalog, storageEngine, predicateBuilder),
                 new DropTableHandler(catalog, storageEngine)
         );
         parser = new CalciteQueryParser();
@@ -179,9 +187,43 @@ class SqlExecutorTest {
     }
 
     @Test
+    void updateWithWhere() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO users VALUES (1, 'Alice', true)");
+        execute("INSERT INTO users VALUES (2, 'Bob', false)");
+
+        String result = execute("UPDATE users SET name = 'Robert' WHERE id = 2");
+        assertTrue(result.contains("Updated 1 row."));
+
+        String selectResult = execute("SELECT * FROM users WHERE id = 2");
+        assertTrue(selectResult.contains("Robert"));
+        assertFalse(selectResult.contains("Bob"));
+    }
+
+    @Test
+    void updateAllRows() throws Exception {
+        execute("CREATE TABLE users (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO users VALUES (1, 'Alice', true)");
+        execute("INSERT INTO users VALUES (2, 'Bob', false)");
+
+        String result = execute("UPDATE users SET active = true");
+        assertTrue(result.contains("Updated 2 rows."));
+
+        String selectResult = execute("SELECT * FROM users WHERE active = false");
+        assertTrue(selectResult.contains("(0 rows)"));
+    }
+
+    @Test
+    void updateNonExistentTable_shouldThrow() {
+        assertThrows(Exception.class, () -> execute("UPDATE nonexistent SET name = 'x' WHERE id = 1"));
+    }
+
+    @Test
     void unsupportedStatement_shouldThrow() throws Exception {
-        // UPDATE is parsed by Calcite but not supported by our executor
-        SqlNode node = parser.parse("UPDATE users SET name = 'x' WHERE id = 1");
-        assertThrows(UnsupportedOperationException.class, () -> executor.execute(node));
+        // MERGE is parsed by Calcite but not supported by our executor
+        assertThrows(UnsupportedOperationException.class, () -> {
+            SqlNode node = parser.parse("EXPLAIN PLAN FOR SELECT * FROM users");
+            executor.execute(node);
+        });
     }
 }

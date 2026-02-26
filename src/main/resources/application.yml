@@ -13,3 +13,4 @@ logging:
 # REPL configuration
 app:
   prompt: "mp-db> "
+  data-dir: "./data"
