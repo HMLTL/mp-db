@@ -297,6 +297,73 @@ mp-db> :quit
 Goodbye!
 ```
 
+### JOINs, Subqueries & Projection
+
+```
+mp-db> :debug-ast off
+Debug AST mode disabled.
+
+mp-db> CREATE TABLE departments (id INT, name VARCHAR(50))
+Table 'DEPARTMENTS' created.
+
+mp-db> CREATE TABLE employees (id INT, name VARCHAR(100), dept_id INT, salary FLOAT)
+Table 'EMPLOYEES' created.
+
+mp-db> INSERT INTO departments VALUES (1, 'Engineering'), (2, 'Sales'), (3, 'HR')
+Inserted 3 rows.
+
+mp-db> INSERT INTO employees VALUES (1, 'Alice', 1, 90000.0), (2, 'Bob', 1, 75000.0)
+Inserted 2 rows.
+
+mp-db> INSERT INTO employees VALUES (3, 'Charlie', 2, 60000.0)
+Inserted 1 row.
+
+mp-db> SELECT employees.name, departments.name FROM employees INNER JOIN departments ON employees.dept_id = departments.id
+ EMPLOYEES.NAME | DEPARTMENTS.NAME
+----------------+-----------------
+ Alice          | Engineering
+ Bob            | Engineering
+ Charlie        | Sales
+(3 rows)
+
+mp-db> SELECT * FROM departments LEFT JOIN employees ON departments.id = employees.dept_id
+ DEPARTMENTS.ID | DEPARTMENTS.NAME | EMPLOYEES.ID | EMPLOYEES.NAME | EMPLOYEES.DEPT_ID | EMPLOYEES.SALARY
+----------------+------------------+--------------+----------------+--------------------+-----------------
+ 1              | Engineering      | 1            | Alice          | 1                  | 90000.0
+ 1              | Engineering      | 2            | Bob            | 1                  | 75000.0
+ 2              | Sales            | 3            | Charlie        | 2                  | 60000.0
+ 3              | HR               | NULL         | NULL           | NULL               | NULL
+(4 rows)
+
+mp-db> SELECT * FROM employees WHERE dept_id IN (SELECT id FROM departments WHERE name = 'Engineering')
+ ID | NAME  | DEPT_ID | SALARY
+----+-------+---------+--------
+ 1  | Alice | 1       | 90000.0
+ 2  | Bob   | 1       | 75000.0
+(2 rows)
+
+mp-db> SELECT * FROM (SELECT * FROM employees WHERE salary > 70000.0) AS top_earners
+ ID | NAME  | DEPT_ID | SALARY
+----+-------+---------+--------
+ 1  | Alice | 1       | 90000.0
+ 2  | Bob   | 1       | 75000.0
+(2 rows)
+
+mp-db> SELECT id, name FROM employees
+ ID | NAME
+----+--------
+ 1  | Alice
+ 2  | Bob
+ 3  | Charlie
+(3 rows)
+
+mp-db> DROP TABLE employees
+Table 'EMPLOYEES' dropped.
+
+mp-db> DROP TABLE departments
+Table 'DEPARTMENTS' dropped.
+```
+
 ## Current Limitations
 
 - No `RIGHT JOIN` or `FULL OUTER JOIN` (only `INNER JOIN` and `LEFT JOIN`)
