@@ -5,6 +5,7 @@ import com.mpdb.catalog.ColumnType;
 import com.mpdb.catalog.TableSchema;
 import com.mpdb.repl.CalciteQueryParser;
 import com.mpdb.storage.Tuple;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
 import org.junit.jupiter.api.BeforeEach;
@@ -161,6 +162,51 @@ class PredicateBuilderTest {
 
         // NULL compared with anything returns false (SQL three-valued logic)
         assertFalse(pred.test(new Tuple(schema, new Object[]{1, null, true})));
+    }
+
+    @Test
+    void columnColumnComparison_withMergedSchema() throws Exception {
+        TableSchema left = new TableSchema("A", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("name", ColumnType.VARCHAR, 50)
+        ));
+        TableSchema right = new TableSchema("B", List.of(
+                new ColumnDefinition("id", ColumnType.INT),
+                new ColumnDefinition("a_id", ColumnType.INT)
+        ));
+        TableSchema merged = TableSchema.merge("A", left, "B", right);
+
+        // Parse: SELECT * FROM A INNER JOIN B ON A.id = B.a_id
+        SqlNode node = parser.parse("SELECT * FROM A INNER JOIN B ON A.id = B.a_id");
+        SqlSelect select = (SqlSelect) node;
+        SqlJoin join = (SqlJoin) select.getFrom();
+        SqlNode condition = join.getCondition();
+
+        Predicate<Tuple> pred = predicateBuilder.build(condition, merged);
+
+        // A.id=1, A.name='Alice', B.id=1, B.a_id=1 -> match
+        assertTrue(pred.test(new Tuple(merged, new Object[]{1, "Alice", 1, 1})));
+        // A.id=1, A.name='Alice', B.id=2, B.a_id=2 -> no match
+        assertFalse(pred.test(new Tuple(merged, new Object[]{1, "Alice", 2, 2})));
+    }
+
+    @Test
+    void qualifiedColumnName_resolution() throws Exception {
+        TableSchema left = new TableSchema("A", List.of(
+                new ColumnDefinition("id", ColumnType.INT)
+        ));
+        TableSchema right = new TableSchema("B", List.of(
+                new ColumnDefinition("val", ColumnType.VARCHAR, 50)
+        ));
+        TableSchema merged = TableSchema.merge("A", left, "B", right);
+
+        // A.ID should resolve to index 0
+        assertEquals(0, merged.getColumnIndex("A.ID"));
+        // B.VAL should resolve to index 1
+        assertEquals(1, merged.getColumnIndex("B.VAL"));
+        // Unambiguous bare name should resolve via suffix match
+        assertEquals(0, merged.getColumnIndex("ID"));
+        assertEquals(1, merged.getColumnIndex("VAL"));
     }
 
     @Test

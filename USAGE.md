@@ -84,6 +84,13 @@ Select all rows:
 SELECT * FROM users;
 ```
 
+Column projection:
+
+```sql
+SELECT id, name FROM users;
+SELECT name, active FROM users;
+```
+
 With a WHERE clause:
 
 ```sql
@@ -105,6 +112,41 @@ Supported comparison operators: `=`, `!=`, `<`, `<=`, `>`, `>=`
 Logical operators: `AND`, `OR`
 
 Note: comparisons with NULL follow SQL three-valued logic — `NULL = NULL` returns false. Use `IS NULL` instead.
+
+### JOIN
+
+INNER JOIN — returns only matching rows from both tables:
+
+```sql
+SELECT * FROM users INNER JOIN orders ON users.id = orders.user_id;
+SELECT users.name, orders.amount FROM users INNER JOIN orders ON users.id = orders.user_id;
+```
+
+LEFT JOIN — returns all rows from the left table, with NULLs for unmatched right columns:
+
+```sql
+SELECT * FROM users LEFT JOIN orders ON users.id = orders.user_id;
+```
+
+JOINs can be combined with WHERE:
+
+```sql
+SELECT * FROM users INNER JOIN orders ON users.id = orders.user_id WHERE orders.amount > 100;
+```
+
+### Subqueries
+
+Subquery in FROM (derived table):
+
+```sql
+SELECT * FROM (SELECT * FROM users WHERE active = true) AS active_users;
+```
+
+Subquery in WHERE with IN:
+
+```sql
+SELECT * FROM users WHERE id IN (SELECT user_id FROM orders);
+```
 
 ### UPDATE
 
@@ -257,8 +299,7 @@ Goodbye!
 
 ## Current Limitations
 
-- No `JOIN` or subquery support in SELECT
-- No column-list projection (only `SELECT *`)
+- No `RIGHT JOIN` or `FULL OUTER JOIN` (only `INNER JOIN` and `LEFT JOIN`)
 - No `ORDER BY`, `GROUP BY`, or aggregate functions
 - No transactions or concurrency control
 - Deleted space within pages is not reclaimed (no compaction)

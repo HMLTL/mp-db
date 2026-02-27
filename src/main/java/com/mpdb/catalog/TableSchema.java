@@ -1,6 +1,6 @@
 package com.mpdb.catalog;
 
-import java.util.Collections;
+import java.util.ArrayList;
 import java.util.List;
 
 public class TableSchema {
@@ -39,11 +39,35 @@ public class TableSchema {
     }
 
     public int getColumnIndex(String name) {
+        // Exact match first (handles both simple and qualified names)
         for (int i = 0; i < columns.size(); i++) {
             if (columns.get(i).name().equalsIgnoreCase(name)) {
                 return i;
             }
         }
-        return -1;
+
+        // Suffix match: bare column name matches "alias.col"
+        int found = -1;
+        String suffix = "." + name.toUpperCase();
+        for (int i = 0; i < columns.size(); i++) {
+            if (columns.get(i).name().toUpperCase().endsWith(suffix)) {
+                if (found >= 0) {
+                    throw new IllegalArgumentException("Ambiguous column reference: " + name);
+                }
+                found = i;
+            }
+        }
+        return found;
+    }
+
+    public static TableSchema merge(String leftAlias, TableSchema left, String rightAlias, TableSchema right) {
+        List<ColumnDefinition> merged = new ArrayList<>();
+        for (ColumnDefinition col : left.getColumns()) {
+            merged.add(new ColumnDefinition(leftAlias + "." + col.name(), col.type(), col.maxLength()));
+        }
+        for (ColumnDefinition col : right.getColumns()) {
+            merged.add(new ColumnDefinition(rightAlias + "." + col.name(), col.type(), col.maxLength()));
+        }
+        return new TableSchema(leftAlias + "_" + rightAlias, merged);
     }
 }

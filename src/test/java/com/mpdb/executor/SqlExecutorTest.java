@@ -268,6 +268,119 @@ class SqlExecutorTest {
         assertTrue(result.contains("Unknown"));
     }
 
+    // --- JOIN tests ---
+
+    @Test
+    void innerJoin_basic() throws Exception {
+        execute("CREATE TABLE a (id INT, name VARCHAR(50))");
+        execute("CREATE TABLE b (id INT, a_id INT, val VARCHAR(50))");
+        execute("INSERT INTO a VALUES (1, 'Alice')");
+        execute("INSERT INTO a VALUES (2, 'Bob')");
+        execute("INSERT INTO b VALUES (1, 1, 'X')");
+        execute("INSERT INTO b VALUES (2, 2, 'Y')");
+        execute("INSERT INTO b VALUES (3, 99, 'Z')");
+
+        String result = execute("SELECT * FROM a INNER JOIN b ON a.id = b.a_id");
+        assertTrue(result.contains("Alice"));
+        assertTrue(result.contains("Bob"));
+        assertTrue(result.contains("X"));
+        assertTrue(result.contains("Y"));
+        assertFalse(result.contains("Z"));
+        assertTrue(result.contains("(2 rows)"));
+    }
+
+    @Test
+    void leftJoin_basic() throws Exception {
+        execute("CREATE TABLE a (id INT, name VARCHAR(50))");
+        execute("CREATE TABLE b (id INT, a_id INT, val VARCHAR(50))");
+        execute("INSERT INTO a VALUES (1, 'Alice')");
+        execute("INSERT INTO a VALUES (2, 'Bob')");
+        execute("INSERT INTO a VALUES (3, 'Charlie')");
+        execute("INSERT INTO b VALUES (1, 1, 'X')");
+
+        String result = execute("SELECT * FROM a LEFT JOIN b ON a.id = b.a_id");
+        assertTrue(result.contains("Alice"));
+        assertTrue(result.contains("X"));
+        assertTrue(result.contains("Bob"));
+        assertTrue(result.contains("Charlie"));
+        assertTrue(result.contains("NULL"));
+        assertTrue(result.contains("(3 rows)"));
+    }
+
+    @Test
+    void joinWithWhere() throws Exception {
+        execute("CREATE TABLE a (id INT, name VARCHAR(50))");
+        execute("CREATE TABLE b (id INT, a_id INT, val VARCHAR(50))");
+        execute("INSERT INTO a VALUES (1, 'Alice')");
+        execute("INSERT INTO a VALUES (2, 'Bob')");
+        execute("INSERT INTO b VALUES (1, 1, 'X')");
+        execute("INSERT INTO b VALUES (2, 2, 'Y')");
+
+        String result = execute("SELECT * FROM a INNER JOIN b ON a.id = b.a_id WHERE a.name = 'Alice'");
+        assertTrue(result.contains("Alice"));
+        assertTrue(result.contains("X"));
+        assertFalse(result.contains("Bob"));
+        assertTrue(result.contains("(1 row)"));
+    }
+
+    // --- Subquery tests ---
+
+    @Test
+    void subqueryInFrom() throws Exception {
+        execute("CREATE TABLE t (id INT, name VARCHAR(50))");
+        execute("INSERT INTO t VALUES (1, 'Alice')");
+        execute("INSERT INTO t VALUES (2, 'Bob')");
+
+        String result = execute("SELECT * FROM (SELECT * FROM t) AS sub");
+        assertTrue(result.contains("Alice"));
+        assertTrue(result.contains("Bob"));
+        assertTrue(result.contains("(2 rows)"));
+    }
+
+    @Test
+    void whereInSubquery() throws Exception {
+        execute("CREATE TABLE t1 (id INT, name VARCHAR(50))");
+        execute("CREATE TABLE t2 (id INT, t1_id INT)");
+        execute("INSERT INTO t1 VALUES (1, 'Alice')");
+        execute("INSERT INTO t1 VALUES (2, 'Bob')");
+        execute("INSERT INTO t1 VALUES (3, 'Charlie')");
+        execute("INSERT INTO t2 VALUES (1, 1)");
+        execute("INSERT INTO t2 VALUES (2, 3)");
+
+        String result = execute("SELECT * FROM t1 WHERE id IN (SELECT t1_id FROM t2)");
+        assertTrue(result.contains("Alice"));
+        assertFalse(result.contains("Bob"));
+        assertTrue(result.contains("Charlie"));
+        assertTrue(result.contains("(2 rows)"));
+    }
+
+    // --- Column projection tests ---
+
+    @Test
+    void columnProjection() throws Exception {
+        execute("CREATE TABLE t (id INT, name VARCHAR(50), active BOOLEAN)");
+        execute("INSERT INTO t VALUES (1, 'Alice', true)");
+        execute("INSERT INTO t VALUES (2, 'Bob', false)");
+
+        String result = execute("SELECT id, name FROM t");
+        assertTrue(result.contains("Alice"));
+        assertTrue(result.contains("Bob"));
+        assertFalse(result.contains("ACTIVE"));
+        assertTrue(result.contains("(2 rows)"));
+    }
+
+    @Test
+    void ambiguousColumn_shouldThrow() throws Exception {
+        execute("CREATE TABLE a (id INT, name VARCHAR(50))");
+        execute("CREATE TABLE b (id INT, val VARCHAR(50))");
+        execute("INSERT INTO a VALUES (1, 'Alice')");
+        execute("INSERT INTO b VALUES (1, 'X')");
+
+        // Both tables have 'id', bare reference should be ambiguous in JOIN context
+        assertThrows(Exception.class, () ->
+                execute("SELECT * FROM a INNER JOIN b ON id = id"));
+    }
+
     @Test
     void unsupportedStatement_shouldThrow() throws Exception {
         // MERGE is parsed by Calcite but not supported by our executor

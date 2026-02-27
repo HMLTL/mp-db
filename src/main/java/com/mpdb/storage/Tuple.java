@@ -35,4 +35,11 @@ public class Tuple {
     public int getColumnCount() {
         return values.length;
     }
+
+    public static Tuple merge(Tuple left, Tuple right, TableSchema mergedSchema) {
+        Object[] merged = new Object[left.values.length + right.values.length];
+        System.arraycopy(left.values, 0, merged, 0, left.values.length);
+        System.arraycopy(right.values, 0, merged, left.values.length, right.values.length);
+        return new Tuple(mergedSchema, merged);
+    }
 }
